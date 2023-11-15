@@ -3,17 +3,19 @@ import streamlit as st
 import joblib
 import numpy as np
 from utils import process_new
-
+import lightgbm as lgb
+from imblearn.under_sampling import RandomUnderSampler
+from sklearn.model_selection import train_test_split#C:\Users\zacks\Downloads\EpFinal\model.pkl
 
 ## Load the model
 model_lgb = joblib.load('model.pkl')
 
 
 
-def churn_classification():
+def Heart_classification():
 
     ## Title
-    st.title('Churn Classification Prediction ....')
+    st.title('Heart Disease Classification Prediction ....')
     st.markdown('<hr>', unsafe_allow_html=True)
 
     ## Choose Model
@@ -82,31 +84,29 @@ def churn_classification():
     GH = st.number_input('GH')
     GI = st.number_input('GI')
     GL = st.number_input('GL')
-    Epsilon = st.number_input('Epsilon')
     st.markdown('<hr>', unsafe_allow_html=True)
 
 
-    if st.button('Predict Churn ...'):
+    if st.button('Predict Heart Disease ...'):
 
         ## Concatenate the users data
-        new_data = np.array([Id,AB, AF, AH, AM, AR, AX, AY, AZ, BC, BD, BN, BP, BQ, BR, BZ, CB, CC, CD, CF, CH, CL, CR, CS, CU, CW, DA, DE, DF, DH, DI, DL, DN, DU, DV, DY, EB, EE, EG, EH, EJ, EL, EP, EU, FC, FD, FE, FI, FL, FR, FS, GB, GE, GF, GH, GI, GL,Epsilon])
-        
+        new_data = np.array([Id,AB, AF, AH, AM, AR, AX, AY, AZ, BC, BD, BN, BP, BQ, BR, BZ, CB, CC, CD, CF, CH, CL, CR, CS, CU, CW, DA, DE, DF, DH, DI, DL, DN, DU, DV, DY, EB, EE, EG, EH, EJ, EL, EP, EU, FC, FD, FE, FI, FL, FR, FS, GB, GE, GF, GH, GI, GL])
+        print("--  ",new_data.shape)
         ## Call the function from utils.py to apply the pipeline
         X_processed = process_new(X_new=new_data)
 
         ## Predict using Model
-        if model_type == 'RF':
-            y_pred = model_lgb.predict(X_processed)[0]
+        if model_type == 'lgb':
+            y_pred = model_lgb.predict(X_processed)
 
 
-        y_pred = bool(y_pred)
 
         ## Display Results
-        st.success(f'Churn Prediction is ... {y_pred}')
+        st.success(f'The output ... {y_pred}')
 
 
 
 if __name__ == '__main__':
     ## Call the function
-    churn_classification()
+    Heart_classification()
 
