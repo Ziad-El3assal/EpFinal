@@ -6,7 +6,7 @@ import os
 ## skelarn -- preprocessing
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.impute import SimpleImputer
+from sklearn.impute import KNNImputer,SimpleImputer
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.compose import ColumnTransformer
 
@@ -18,12 +18,9 @@ y = df['Class'].astype(np.int64)
 ## split to train and test
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.2, shuffle=True, stratify=y)
 
-## Slicing cols
-num_cols_process = [X.coulmns]
-categ_cols_process = X_train.select_dtypes(include='object').columns.tolist()
-## The rest of columns does not need any thing
-cols_ready = list(set(X_train.columns.tolist()) - set(num_cols_process) - set(categ_cols_process))
 
+num_col_process = X_train.select_dtypes(include=np.number).columns.tolist()
+categ_col_process = X_train.select_dtypes(include='object').columns.tolist()
 
 ## Pipeline
 
@@ -32,38 +29,48 @@ cols_ready = list(set(X_train.columns.tolist()) - set(num_cols_process) - set(ca
 ## For Cols without any needs ------------> Imputing only
 
 ## For Numerical: num_cols_process
+
 num_pipeline = Pipeline(steps=[
-                        ('selector', ColumnTransformer(num_cols_process)),
-                        ('imputer', SimpleImputer(strategy='median')),
+                        #('selector', ColumnTransformer(num_cols_process)),
+                        ('imputer', KNNImputer(n_neighbors=5)),
                         ('scaler', StandardScaler())
                     ])
-
+numerical_transformer = ColumnTransformer(
+    transformers=[
+        ('numerical', num_pipeline, num_col_process)
+    ],
+    remainder='passthrough'  # Include any remaining columns without transformation
+)
 ## For Categorical: categ_cols_process
 categ_pipeline = Pipeline(steps=[
-                        ('selector', ColumnTransformer(categ_cols_process)),
                         ('imputer', SimpleImputer(strategy='most_frequent')),
-                        ('encoder', OneHotEncoder(drop='first', sparse_output=False))
+                        #('onehot', OneHotEncoder(handle_unknown='ignore'))
+                        
                     ])
 
-
+categ_transformer = ColumnTransformer(
+    transformers=[
+        ('numerical', categ_pipeline, categ_col_process)
+    ],
+    remainder='passthrough'  # Include any remaining columns without transformation
+)
 ## For ready cols
 readycols_pipeline = Pipeline(steps=[
-                        ('selector', ColumnTransformer(cols_ready)),
-                        ('imputer', SimpleImputer(strategy='most_frequent')),
+                        ('imputer', SimpleImputer(strategy='median'))
+                        
                     ])
 
 ## Combine all
 all_pipeline = FeatureUnion(transformer_list=[
-                            ('numerical', num_pipeline),
-                            ('categorical', categ_pipeline),
-                            ('ready_cols', readycols_pipeline)
+                        ('num_pipeline', numerical_transformer),
+                        ('categ_pipeline', categ_transformer),
+                        #('readycols_pipeline', readycols_pipeline)
                         ])
 
-## apply
-_ = all_pipeline.fit(X_train)
 
+all_pipeline.fit(X_train)
 
-
+print(X_train.shape)
 
 def process_new(X_new):
     ''' This Function is to apply the pipeline to user data. Taking a list.
@@ -93,7 +100,7 @@ def process_new(X_new):
     df_new['AY'] = df_new['AY'].astype(np.int64)
     df_new['AZ'] = df_new['AZ'].astype(np.int64)
     df_new['BC'] = df_new['BC'].astype(np.int64)
-    df_new['BD'] = df_new['BD'].astype(np.int64)
+    #df_new['BD'] = df_new['BD'].astype(np.int64)
     df_new['BN'] = df_new['BN'].astype(np.int64)
     df_new['BP'] = df_new['BP'].astype(np.int64)
     df_new['BQ'] = df_new['BQ'].astype(np.int64)
@@ -101,14 +108,14 @@ def process_new(X_new):
     df_new['BZ'] = df_new['BZ'].astype(np.int64)
     df_new['CB'] = df_new['CB'].astype(np.int64)
     df_new['CC'] = df_new['CC'].astype(np.int64)
-    df_new['CD'] = df_new['CD'].astype(np.int64)
+   # df_new['CD'] = df_new['CD'].astype(np.int64)
     df_new['CF'] = df_new['CF'].astype(np.int64)
     df_new['CH'] = df_new['CH'].astype(np.int64)
     df_new['CL'] = df_new['CL'].astype(np.int64)
     df_new['CR'] = df_new['CR'].astype(np.int64)
     df_new['CS'] = df_new['CS'].astype(np.int64)
     df_new['CU'] = df_new['CU'].astype(np.int64)
-    df_new['CW'] = df_new['CW'].astype(np.int64)
+   # df_new['CW'] = df_new['CW'].astype(np.int64)
     df_new['DA'] = df_new['DA'].astype(np.int64)
     df_new['DE'] = df_new['DE'].astype(np.int64)
     df_new['DF'] = df_new['DF'].astype(np.int64)
@@ -128,7 +135,7 @@ def process_new(X_new):
     df_new['EP'] = df_new['EP'].astype(np.int64)
     df_new['EU'] = df_new['EU'].astype(np.int64)
     df_new['FC'] = df_new['FC'].astype(np.int64)
-    df_new['FD'] = df_new['FD'].astype(np.int64)
+    #df_new['FD'] = df_new['FD'].astype(np.int64)
     df_new['FE'] = df_new['FE'].astype(np.int64)
     df_new['FI'] = df_new['FI'].astype(np.int64)
     df_new['FL'] = df_new['FL'].astype(np.int64)
@@ -140,9 +147,10 @@ def process_new(X_new):
     df_new['GH'] = df_new['GH'].astype(np.int64)
     df_new['GI'] = df_new['GI'].astype(np.int64)
     df_new['GL'] = df_new['GL'].astype(np.int64)
+    print('----', df_new.shape)
     ## ...... ###
     ## Apply the pipeline
     X_processed = all_pipeline.transform(df_new)
+    print(X_processed.shape)
 
-
-    return X_processed
+    return df_new
